@@ -12,8 +12,15 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-load_dotenv()
+
+# Try to load dotenv if available, but don't fail if it's not installed
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available, continue without it
+    # Environment variables will be loaded from system environment
+    pass
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,9 +34,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g5*oxyxgah6aq-oa%oc33h5)3or4&jrnn(%)=)$&2m---c8=q7'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = []
+# Render deployment detection and allowed hosts configuration
+if 'RENDER' in os.environ:
+    ALLOWED_HOSTS = [
+        '.onrender.com',  # Render's default domain
+        os.getenv('RENDER_EXTERNAL_HOSTNAME', 'localhost'),
+    ]
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']  # Development settings
 
 
 # Application definition
@@ -55,6 +69,7 @@ AUTH_USER_MODEL = 'users.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files on Render
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -86,20 +101,45 @@ WSGI_APPLICATION = 'onlinepollsystem.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.getenv('DB_NAME', 'onlinepollsystem'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'OnlineP0ll@123'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'ATOMIC_REQUESTS': True,
-        'TEST': {
-            'NAME': 'test_' + os.getenv('DB_NAME', 'poll_db'),
-        },
+# Database configuration for different environments
+if 'RENDER' in os.environ:
+    # Render PostgreSQL configuration
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
     }
-}
+elif 'PYTHONANYWHERE_DOMAIN' in os.environ or 'pythonanywhere.com' in os.environ.get('SERVER_NAME', ''):
+    # PythonAnywhere MySQL configuration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', 'cracker$pollsystem'),  # Replace 'cracker' with your username
+            'USER': os.getenv('DB_USER', 'cracker'),  # Replace 'cracker' with your username  
+            'PASSWORD': os.getenv('DB_PASSWORD', 'your-mysql-password'),
+            'HOST': os.getenv('DB_HOST', 'cracker.mysql.pythonanywhere-services.com'),  # Replace 'cracker'
+            'PORT': os.getenv('DB_PORT', '3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
+    }
+else:
+    # Local development PostgreSQL configuration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': os.getenv('DB_NAME', 'onlinepollsystem'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'OnlineP0ll@123'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+            'ATOMIC_REQUESTS': True,
+            'TEST': {
+                'NAME': 'test_' + os.getenv('DB_NAME', 'poll_db'),
+            },
+        }
+    }
 
 
 # Password validation
@@ -136,7 +176,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WhiteNoise configuration for Render
+if 'RENDER' in os.environ:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

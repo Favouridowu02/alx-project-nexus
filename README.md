@@ -156,3 +156,5 @@ The knowledge and skills gained through this program enable:
 - Implementing robust data processing pipelines
 - Contributing to enterprise-level backend systems
 - Leading technical teams in backend development projects
+
+![CI](https://github.com/Favouridowu02/alx-project-nexus/workflows/Continuous%20Integration/badge.svg)

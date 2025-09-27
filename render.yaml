@@ -5,7 +5,7 @@ services:
   # Django Web Service
   - type: web
     name: onlinepollsystem-api
-    runtime: python3
+    runtime: python
     env: python
     plan: free  # You can upgrade to paid plans for better performance
     rootDir: onlinepollsystem  # Django project is in this subdirectory

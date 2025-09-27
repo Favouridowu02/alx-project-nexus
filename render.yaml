@@ -1,0 +1,45 @@
+# Render Blueprint for Django Online Poll System
+# This file defines the services needed to deploy the Django REST API on Render
+
+services:
+  # Django Web Service
+  - type: web
+    name: onlinepollsystem-api
+    runtime: python3
+    env: python
+    plan: free  # You can upgrade to paid plans for better performance
+    rootDir: onlinepollsystem  # Django project is in this subdirectory
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn onlinepollsystem.wsgi:application --bind 0.0.0.0:$PORT"
+    healthCheckPath: /admin/  # Django admin as health check
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: DJANGO_SETTINGS_MODULE
+        value: onlinepollsystem.settings
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: onlinepollsystem-db
+          property: connectionString
+      - key: RENDER
+        value: true
+
+databases:
+  # PostgreSQL Database
+  - name: onlinepollsystem-db
+    databaseName: onlinepollsystem
+    user: pollsystem_user
+    plan: free  # Free tier has limitations, upgrade for production
+    postgresMajorVersion: 15
+
+# Optional: Redis for caching (if needed in the future)
+# - type: redis
+#   name: onlinepollsystem-redis
+#   plan: free
+#   maxmemoryPolicy: allkeys-lru

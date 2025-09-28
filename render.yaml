@@ -11,7 +11,6 @@ services:
     rootDir: onlinepollsystem  # Django project is in this subdirectory
     buildCommand: "./build.sh"
     startCommand: "gunicorn onlinepollsystem.wsgi:application --bind 0.0.0.0:$PORT"
-    healthCheckPath: /admin/  # Django admin as health check
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.12
